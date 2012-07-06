@@ -1,0 +1,145 @@
+
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+  xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+    
+    <groupId>fi.helsinki.cs.tmc</groupId>
+    <artifactId>tmc-maven-plugin</artifactId>
+    <packaging>maven-plugin</packaging>
+    <version>0.1.0-SNAPSHOT</version>
+    
+    <name>TMC Maven Plugin</name>
+    <url>http://maven.testmycode.net/</url>
+    
+    <organization>
+        <name>University of Helsinki, Department of Computer Science</name>
+        <url>http://cs.helsinki.fi/</url>
+    </organization>
+    
+    <developers>
+        <developer>
+            <id>mpartel</id>
+            <name>Martin Pärtel</name>
+            <email>martin.partel@gmail.com</email>
+        </developer>
+    </developers>
+    
+    <properties>
+        <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+    </properties>
+
+    <dependencies>
+        <dependency>
+            <groupId>org.apache.maven</groupId>
+            <artifactId>maven-core</artifactId>
+            <version>3.0.4</version>
+        </dependency>
+        <dependency>
+            <groupId>org.apache.maven</groupId>
+            <artifactId>maven-plugin-api</artifactId>
+            <version>3.0.4</version>
+        </dependency>
+        <dependency>
+            <groupId>commons-lang</groupId>
+            <artifactId>commons-lang</artifactId>
+            <version>2.6</version>
+        </dependency>
+        <dependency>
+            <groupId>fi.helsinki.cs.tmc</groupId>
+            <artifactId>tmc-junit-runner</artifactId>
+            <version>0.2.0</version>
+        </dependency>
+    </dependencies>
+    
+    <build>
+        <plugins>
+            <!-- Compiler options -->
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-compiler-plugin</artifactId>
+                <version>2.3.2</version>
+                <configuration>
+                    <showDeprecation>true</showDeprecation>
+                </configuration>
+            </plugin>
+            <!-- Generate source JAR -->
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-source-plugin</artifactId>
+                <executions>
+                    <execution>
+                        <id>attach-sources</id>
+                        <goals>
+                            <goal>jar</goal>
+                        </goals>
+                    </execution>
+                </executions>
+            </plugin>
+            <!-- Generate javadoc JAR -->
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-javadoc-plugin</artifactId>
+                <executions>
+                    <execution>
+                        <id>attach-javadocs</id>
+                        <goals>
+                            <goal>jar</goal>
+                        </goals>
+                    </execution>
+                </executions>
+            </plugin>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-surefire-plugin</artifactId>
+                <version>2.7.2</version>
+                <configuration>
+                    <excludes>
+                        <exclude>**/test/resources/**</exclude>
+                    </excludes>
+                </configuration>
+            </plugin>
+        </plugins>
+    </build>
+    
+    <!-- Deploy to maven.testmycode.net/nexus -->
+    <distributionManagement>
+        <repository>
+            <id>tmc</id>
+            <name>TMC releases</name>
+            <url>http://maven.testmycode.net/nexus/content/repositories/releases</url>
+        </repository>
+        <snapshotRepository>
+            <id>tmc</id>
+            <name>TMC snapshots</name>
+            <url>http://maven.testmycode.net/nexus/content/repositories/snapshots</url>
+        </snapshotRepository>
+    </distributionManagement>
+    
+    <!-- Use maven.testmycode.net/nexus as a repo -->
+    <repositories>
+        <repository>
+            <id>tmc</id>
+            <name>TMC repo</name>
+            <url>http://maven.testmycode.net/nexus/content/groups/public</url>
+            <releases>
+                <enabled>true</enabled>
+            </releases>
+            <snapshots>
+                <enabled>true</enabled>
+            </snapshots>
+        </repository>
+    </repositories>
+    <pluginRepositories>
+        <pluginRepository>
+            <id>tmc</id>
+            <name>TMC repo</name>
+            <url>http://maven.testmycode.net/nexus/content/groups/public</url>
+            <releases>
+                <enabled>true</enabled>
+            </releases>
+            <snapshots>
+                <enabled>true</enabled>
+            </snapshots>
+        </pluginRepository>
+    </pluginRepositories>
+</project>
