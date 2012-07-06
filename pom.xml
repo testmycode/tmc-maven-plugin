@@ -16,6 +16,12 @@
         <url>http://cs.helsinki.fi/</url>
     </organization>
     
+    <scm>
+        <connection>scm:git:https://github.com/testmycode/tmc-maven-plugin.git</connection>
+        <developerConnection>scm:git:git@github.com:testmycode/tmc-maven-plugin.git</developerConnection>
+        <url>https://github.com/testmycode/tmc-maven-plugin</url>
+    </scm>
+    
     <developers>
         <developer>
             <id>mpartel</id>
@@ -88,15 +94,11 @@
                     </execution>
                 </executions>
             </plugin>
+            <!-- Releases using mvn release:prepare and mvn release:perform. -->
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
-                <artifactId>maven-surefire-plugin</artifactId>
-                <version>2.7.2</version>
-                <configuration>
-                    <excludes>
-                        <exclude>**/test/resources/**</exclude>
-                    </excludes>
-                </configuration>
+                <artifactId>maven-release-plugin</artifactId>
+                <version>2.3.2</version>
             </plugin>
         </plugins>
     </build>
