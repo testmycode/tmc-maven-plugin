@@ -1,20 +1,29 @@
 package fi.helsinki.cs.tmc.maven;
 
-import fi.helsinki.cs.tmc.testrunner.TestCaseList;
-import fi.helsinki.cs.tmc.testrunner.TestRunner;
+import fi.helsinki.cs.tmc.testscanner.TestMethod;
 import fi.helsinki.cs.tmc.testscanner.TestScanner;
 import java.io.IOException;
-import java.net.MalformedURLException;
 import org.apache.maven.artifact.DependencyResolutionRequiredException;
-import org.apache.maven.plugin.AbstractMojo;
 import org.apache.maven.plugin.MojoExecutionException;
 
 import java.io.File;
-import java.net.URL;
-import java.net.URLClassLoader;
+import java.io.FileWriter;
+import java.io.Writer;
+import java.util.ArrayList;
 import java.util.List;
+import java.util.ResourceBundle;
 import org.apache.commons.lang.StringUtils;
+import org.apache.maven.artifact.Artifact;
+import org.apache.maven.artifact.resolver.ArtifactResolutionRequest;
+import org.apache.maven.artifact.resolver.ArtifactResolutionResult;
+import org.apache.maven.execution.MavenSession;
+import org.apache.maven.plugin.AbstractMojo;
 import org.apache.maven.project.MavenProject;
+import org.apache.maven.repository.RepositorySystem;
+import org.codehaus.plexus.util.cli.CommandLineException;
+import org.codehaus.plexus.util.cli.CommandLineUtils;
+import org.codehaus.plexus.util.cli.Commandline;
+import org.codehaus.plexus.util.cli.StreamConsumer;
 
 /**
  * Runs tests using the TMC test runner.
@@ -34,6 +43,15 @@ public class TmcTestMojo extends AbstractMojo {
      */
     private MavenProject project;
     
+    /** 
+     * The Maven Session Object 
+     * 
+     * @parameter expression="${session}" 
+     * @required 
+     * @readonly 
+     */
+    private MavenSession session;
+    
     /**
      * Test suite timeout.
      * @parameter default-value=60000
@@ -42,12 +60,52 @@ public class TmcTestMojo extends AbstractMojo {
     private long timeout;
     
     /**
+     * @parameter expression="${tmcjunitrunner.version}"
+     */
+    private String tmcJunitRunnerVersion;
+    
+    /**
      * Output JSON file.
      * @parameter expression="${tmc.test.test_output_file}" default-value="${project.build.directory}/test_output.txt"
      * @required
      */
     private File outputFile;
+    
+    /**
+     * Standard output log file.
+     * @parameter expression="${tmc.test.stdout_file}" default-value="${project.build.directory}/stdout.txt"
+     * @required
+     */
+    private File stdoutFile;
+    
+    /**
+     * Error output log file.
+     * @parameter expression="${tmc.test.stderr_file}" default-value="${project.build.directory}/stderr.txt"
+     * @required
+     */
+    private File stderrFile;
+    
+    /**
+     * @component
+     */
+    private RepositorySystem repoSystem;
 
+    private ResourceBundle bundle;
+
+    public TmcTestMojo() {
+        bundle = ResourceBundle.getBundle(this.getClass().getCanonicalName());
+    }
+    
+    private void setParamsFromSession(ArtifactResolutionRequest request)
+    {
+        request.setLocalRepository(session.getLocalRepository());
+        request.setOffline(session.isOffline());
+        request.setForceUpdate(session.getRequest().isUpdateSnapshots());
+        request.setServers(session.getRequest().getServers());
+        request.setMirrors(session.getRequest().getMirrors());
+        request.setProxies(session.getRequest().getProxies());
+    }
+    
     public void execute() throws MojoExecutionException {
         List<String> classPathParts;
         try {
@@ -62,28 +120,162 @@ public class TmcTestMojo extends AbstractMojo {
             scanner.addSource(new File(testSourceDir));
         }
         scanner.setClassPath(classPath);
-        TestCaseList cases = TestCaseList.fromTestMethods(scanner.findTests());
+        List<TestMethod> cases = scanner.findTests();
         
-        ClassLoader classLoader;
-        try {
-            URL[] urls = new URL[classPathParts.size()];
-            for (int i = 0; i < urls.length; ++i) {
-                urls[i] = new File(classPathParts.get(i)).toURI().toURL();
-            }
-            classLoader = new URLClassLoader(urls);
-        } catch (MalformedURLException ex) {
-            throw new MojoExecutionException("Failed to build class loader URL", ex);
+        classPath = getTestRunnerClassPath() + File.pathSeparatorChar + classPath;
+        
+        List<String> jvmArgs = new ArrayList<String>();
+        List<String> args = new ArrayList<String>();
+        
+        if (project.getTestCompileSourceRoots().size() != 1) {
+            throw new MojoExecutionException("TMC test runner supports exactly one test directory. There are " + project.getTestCompileSourceRoots().size());
+        }
+        jvmArgs.add("-ea");
+        jvmArgs.add("-Dtmc.test_class_dir=" + project.getTestCompileSourceRoots().get(0));
+        jvmArgs.add("-Dtmc.results_file=" + outputFile.toString());
+        
+        for (TestMethod tc : cases) {
+            args.add(tc.toString());
         }
         
-        TestRunner testRunner = new TestRunner(classLoader);
-        getLog().info("Running tests using TMC testrunner.");
-        testRunner.runTests(cases, timeout);
-        try {
-            cases.writeToJsonFile(outputFile);
-        } catch (IOException ex) {
-            throw new MojoExecutionException("IOException: " + ex.getMessage(), ex);
+        int exitCode = runInForkedVM(classPath, jvmArgs, "fi.helsinki.cs.tmc.testrunner.Main", args);
+        if (exitCode != 0) {
+            throw new MojoExecutionException("Failed to run tests. Exit code: " + exitCode);
         }
-        getLog().info("Results written to " + outputFile);
     }
     
+    private String getTestRunnerClassPath() throws MojoExecutionException {
+        Artifact runnerArt = repoSystem.createArtifact(
+                "fi.helsinki.cs.tmc",
+                "tmc-junit-runner",
+                getTestRunnerVersion(),
+                "jar"
+                );
+
+        ArtifactResolutionRequest req = new ArtifactResolutionRequest();
+        setParamsFromSession(req);
+        req.setArtifact(runnerArt);
+        req.setResolveTransitively(true);
+
+        ArtifactResolutionResult result = repoSystem.resolve(req);
+        if (!result.isSuccess()) {
+            String msg = "Failed to resolve " + runnerArt.toString();
+            Exception cause = null;
+            if (!result.getExceptions().isEmpty()) {
+                cause = result.getExceptions().get(0);
+                msg += ": " + cause.getMessage();
+            }
+            throw new MojoExecutionException(msg, cause);
+        }
+        
+        List<String> parts = new ArrayList<String>(result.getArtifacts().size());
+        for (Artifact art : result.getArtifacts()) {
+            parts.add(art.getFile().getPath());
+        }
+        return StringUtils.join(parts, File.pathSeparatorChar);
+    }
+    
+    private String getTestRunnerVersion() {
+        if (tmcJunitRunnerVersion != null) {
+            return tmcJunitRunnerVersion;
+        } else {
+            return bundle.getString("tmcjunitrunner.version");
+        }
+    }
+    
+    private int runInForkedVM(String classPath, List<String> jvmArgs, String target, List<String> args) {
+        Commandline cli = new Commandline();
+        
+        cli.setExecutable(getJavaCommand());
+        cli.setWorkingDirectory(new File(".").getAbsolutePath());
+        try {
+            cli.addSystemEnvironment();
+        } catch (Exception ex) {
+            this.getLog().warn("Failed to use system envvars");
+        }
+        cli.addEnvironment("CLASSPATH", classPath);
+        
+        String[] argArray = new String[jvmArgs.size() + 1 + args.size()];
+        int i = 0;
+        for (String arg : jvmArgs) {
+            argArray[i++] = arg;
+        }
+        argArray[i++] = target;
+        for (String arg : args) {
+            argArray[i++] = arg;
+        }
+        cli.addArguments(argArray);
+        
+        OutputWriter stdout = new OutputWriter(stdoutFile);
+        OutputWriter stderr = new OutputWriter(stderrFile);
+        try {
+            return CommandLineUtils.executeCommandLine(cli, stdout, stderr);
+        } catch (CommandLineException ex) {
+            getLog().error("Failed to run tests: " + ex.getMessage());
+            return 127;
+        } finally {
+            stdout.close();
+            stderr.close();
+        }
+    }
+    
+    private String getJavaCommand() {
+        return System.getProperty("java.home") + File.separator + "bin" + File.separator + "java";
+    }
+    
+    private class OutputWriter implements StreamConsumer {
+        private Writer writer;
+        private boolean errorLogged = false;
+        
+        public OutputWriter(Writer writer) {
+            this.writer = writer;
+        }
+
+        public OutputWriter(File file) {
+            try {
+                this.writer = new FileWriter(file);
+            } catch (IOException e) {
+                logError(e);
+                this.writer = new SinkWriter();
+            }
+        }
+        
+        public synchronized void consumeLine(String string) {
+            try {
+                writer.append(string).append('\n');
+                writer.flush();
+            } catch (IOException e) {
+                logError(e);
+            }
+        }
+        
+        public void close() {
+            try {
+                writer.close();
+                writer = null;
+            } catch (IOException e) {
+                logError(e);
+            }
+        }
+        
+        private void logError(IOException e) {
+            if (!errorLogged) {
+                getLog().error("Failed to write output: " + e.getMessage());
+                errorLogged = true;
+            }
+        }
+    }
+    
+    
+    private static class SinkWriter extends Writer {
+        @Override
+        public void write(char[] cbuf, int off, int len) throws IOException {
+        }
+        @Override
+        public void flush() throws IOException {
+        }
+        @Override
+        public void close() throws IOException {
+        }
+    }
 }

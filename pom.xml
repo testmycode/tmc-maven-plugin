@@ -5,7 +5,7 @@
     <groupId>fi.helsinki.cs.tmc</groupId>
     <artifactId>tmc-maven-plugin</artifactId>
     <packaging>maven-plugin</packaging>
-    <version>0.1.1-SNAPSHOT</version>
+    <version>1.0-SNAPSHOT</version>
     
     <name>TMC Maven Plugin</name>
     <url>http://maven.testmycode.net/</url>
@@ -32,6 +32,7 @@
     
     <properties>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+        <tmcjunitrunner.version>0.2.0</tmcjunitrunner.version>
     </properties>
 
     <dependencies>
@@ -46,6 +47,11 @@
             <version>3.0.4</version>
         </dependency>
         <dependency>
+            <groupId>org.codehaus.plexus</groupId>
+            <artifactId>plexus-utils</artifactId>
+            <version>3.0.1</version>
+        </dependency>
+        <dependency>
             <groupId>commons-lang</groupId>
             <artifactId>commons-lang</artifactId>
             <version>2.6</version>
@@ -53,7 +59,7 @@
         <dependency>
             <groupId>fi.helsinki.cs.tmc</groupId>
             <artifactId>tmc-junit-runner</artifactId>
-            <version>0.2.0</version>
+            <version>${tmcjunitrunner.version}</version>
         </dependency>
     </dependencies>
     
@@ -99,6 +105,23 @@
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-release-plugin</artifactId>
                 <version>2.3.2</version>
+            </plugin>
+            <!-- Write build properties to file so the plugin can read them later. -->
+            <plugin>
+                <groupId>org.codehaus.mojo</groupId>
+                <artifactId>properties-maven-plugin</artifactId>
+                <version>1.0-alpha-2</version>
+                <executions>
+                    <execution>
+                        <phase>compile</phase>
+                        <goals>
+                            <goal>write-project-properties</goal>
+                        </goals>
+                        <configuration>
+                            <outputFile>${project.build.outputDirectory}/fi/helsinki/cs/tmc/maven/TmcTestMojo.properties</outputFile>
+                        </configuration>
+                    </execution>
+                </executions>
             </plugin>
         </plugins>
     </build>
