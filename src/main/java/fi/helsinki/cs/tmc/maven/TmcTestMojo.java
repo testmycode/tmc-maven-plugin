@@ -53,13 +53,6 @@ public class TmcTestMojo extends AbstractMojo {
     private MavenSession session;
     
     /**
-     * Test suite timeout.
-     * @parameter default-value=60000
-     * @required
-     */
-    private long timeout;
-    
-    /**
      * @parameter expression="${tmcjunitrunner.version}"
      */
     private String tmcJunitRunnerVersion;
