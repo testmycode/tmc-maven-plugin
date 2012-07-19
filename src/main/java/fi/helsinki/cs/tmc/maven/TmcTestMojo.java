@@ -10,6 +10,7 @@ import java.io.File;
 import java.io.FileWriter;
 import java.io.Writer;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.ResourceBundle;
 import org.apache.commons.lang.StringUtils;
@@ -79,6 +80,13 @@ public class TmcTestMojo extends AbstractMojo {
     private File stderrFile;
     
     /**
+     * JVM options. Defaults to reading from $MAVEN_OPTS, if set.
+     * @parameter expression="${tmc.test.jvm_opts}" default-value="USE_MAVEN_OPTS"
+     * @required
+     */
+    private String jvmOpts;
+    
+    /**
      * @component
      */
     private RepositorySystem repoSystem;
@@ -124,6 +132,7 @@ public class TmcTestMojo extends AbstractMojo {
             throw new MojoExecutionException("TMC test runner supports exactly one test directory. There are " + project.getTestCompileSourceRoots().size());
         }
         jvmArgs.add("-ea");
+        jvmArgs.addAll(getUserJvmOpts());
         jvmArgs.add("-Dtmc.test_class_dir=" + project.getTestCompileSourceRoots().get(0));
         jvmArgs.add("-Dtmc.results_file=" + outputFile.toString());
         
@@ -135,6 +144,21 @@ public class TmcTestMojo extends AbstractMojo {
         if (exitCode != 0) {
             throw new MojoExecutionException("Failed to run tests. Exit code: " + exitCode);
         }
+    }
+    
+    private List<String> getUserJvmOpts() {
+        ArrayList<String> result = new ArrayList<String>();
+        
+        String opts = this.jvmOpts;
+        if (opts.equals("USE_MAVEN_OPTS")) {
+            opts = System.getenv("MAVEN_OPTS");
+            if (opts == null) {
+                opts = "";
+            }
+        }
+        
+        result.addAll(Arrays.asList(StringUtils.split(opts)));
+        return result;
     }
     
     private String getTestRunnerClassPath() throws MojoExecutionException {
@@ -198,6 +222,7 @@ public class TmcTestMojo extends AbstractMojo {
             argArray[i++] = arg;
         }
         cli.addArguments(argArray);
+        getLog().debug("TmcTestMojo executing " + cli.toString());
         
         OutputWriter stdout = new OutputWriter(stdoutFile);
         OutputWriter stderr = new OutputWriter(stderrFile);
