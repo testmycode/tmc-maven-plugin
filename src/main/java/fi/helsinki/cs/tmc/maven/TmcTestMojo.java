@@ -21,6 +21,7 @@ import org.apache.maven.execution.MavenSession;
 import org.apache.maven.plugin.AbstractMojo;
 import org.apache.maven.project.MavenProject;
 import org.apache.maven.repository.RepositorySystem;
+import org.codehaus.plexus.util.FileUtils;
 import org.codehaus.plexus.util.cli.CommandLineException;
 import org.codehaus.plexus.util.cli.CommandLineUtils;
 import org.codehaus.plexus.util.cli.Commandline;
@@ -142,7 +143,22 @@ public class TmcTestMojo extends AbstractMojo {
         
         int exitCode = runInForkedVM(classPath, jvmArgs, "fi.helsinki.cs.tmc.testrunner.Main", args);
         if (exitCode != 0) {
-            throw new MojoExecutionException("Failed to run tests. Exit code: " + exitCode);
+            StringBuilder msg = new StringBuilder();
+            msg.append("Failed to run tests. Exit code: ").append(exitCode);
+            msg.append("\n");
+            try {
+                String stdout = FileUtils.fileRead(stdoutFile);
+                msg.append("Stdout:\n").append(stdout);
+            } catch (IOException e) {
+                //Ignore
+            }
+            try {
+                String stderr = FileUtils.fileRead(stderrFile);
+                msg.append("Stdout:\n").append(stderr);
+            } catch (IOException e) {
+                //Ignore
+            }
+            throw new MojoExecutionException(msg.toString());
         }
     }
     
@@ -223,6 +239,7 @@ public class TmcTestMojo extends AbstractMojo {
         }
         cli.addArguments(argArray);
         getLog().debug("TmcTestMojo executing " + cli.toString());
+        getLog().debug("Classpath: " + classPath);
         
         OutputWriter stdout = new OutputWriter(stdoutFile);
         OutputWriter stderr = new OutputWriter(stderrFile);
