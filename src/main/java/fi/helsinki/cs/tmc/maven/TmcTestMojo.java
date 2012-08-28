@@ -31,7 +31,7 @@ import org.codehaus.plexus.util.cli.StreamConsumer;
  * Runs tests using the TMC test runner.
  *
  * @goal test
- * @execute phase=test-compile
+ * @execute phase=process-test-classes
  * @requiresDirectInvocation
  * @requiresDependencyResolution test
  */
