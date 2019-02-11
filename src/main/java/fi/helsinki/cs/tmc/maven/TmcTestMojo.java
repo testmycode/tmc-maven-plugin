@@ -44,49 +44,49 @@ public class TmcTestMojo extends AbstractMojo {
      * @required
      */
     private MavenProject project;
-    
-    /** 
-     * The Maven Session Object 
-     * 
-     * @parameter expression="${session}" 
-     * @required 
-     * @readonly 
+
+    /**
+     * The Maven Session Object
+     *
+     * @parameter expression="${session}"
+     * @required
+     * @readonly
      */
     private MavenSession session;
-    
+
     /**
      * @parameter expression="${tmcjunitrunner.version}"
      */
     private String tmcJunitRunnerVersion;
-    
+
     /**
      * Output JSON file.
      * @parameter expression="${tmc.test.test_output_file}" default-value="${project.build.directory}/test_output.txt"
      * @required
      */
     private File outputFile;
-    
+
     /**
      * Standard output log file.
      * @parameter expression="${tmc.test.stdout_file}" default-value="${project.build.directory}/stdout.txt"
      * @required
      */
     private File stdoutFile;
-    
+
     /**
      * Error output log file.
      * @parameter expression="${tmc.test.stderr_file}" default-value="${project.build.directory}/stderr.txt"
      * @required
      */
     private File stderrFile;
-    
+
     /**
      * JVM options. Defaults to reading from $MAVEN_OPTS, if set.
      * @parameter expression="${tmc.test.jvm_opts}" default-value="USE_MAVEN_OPTS"
      * @required
      */
     private String jvmOpts;
-    
+
     /**
      * @component
      */
@@ -97,7 +97,7 @@ public class TmcTestMojo extends AbstractMojo {
     public TmcTestMojo() {
         bundle = ResourceBundle.getBundle(this.getClass().getCanonicalName());
     }
-    
+
     private void setParamsFromSession(ArtifactResolutionRequest request)
     {
         request.setLocalRepository(session.getLocalRepository());
@@ -107,7 +107,7 @@ public class TmcTestMojo extends AbstractMojo {
         request.setMirrors(session.getRequest().getMirrors());
         request.setProxies(session.getRequest().getProxies());
     }
-    
+
     public void execute() throws MojoExecutionException {
         List<String> classPathParts;
         try {
@@ -116,19 +116,19 @@ public class TmcTestMojo extends AbstractMojo {
             throw new MojoExecutionException("Failed to get project classpath", ex);
         }
         String classPath = StringUtils.join(classPathParts, File.pathSeparatorChar);
-        
+
         TestScanner scanner = new TestScanner();
         for (String testSourceDir : project.getTestCompileSourceRoots()) {
             scanner.addSource(new File(testSourceDir));
         }
         scanner.setClassPath(classPath);
         List<TestMethod> cases = scanner.findTests();
-        
+
         classPath = getTestRunnerClassPath() + File.pathSeparatorChar + classPath;
-        
+
         List<String> jvmArgs = new ArrayList<String>();
         List<String> args = new ArrayList<String>();
-        
+
         if (project.getTestCompileSourceRoots().size() != 1) {
             throw new MojoExecutionException("TMC test runner supports exactly one test directory. There are " + project.getTestCompileSourceRoots().size());
         }
@@ -136,11 +136,11 @@ public class TmcTestMojo extends AbstractMojo {
         jvmArgs.addAll(getUserJvmOpts());
         jvmArgs.add("-Dtmc.test_class_dir=" + project.getTestCompileSourceRoots().get(0));
         jvmArgs.add("-Dtmc.results_file=" + outputFile.toString());
-        
+
         for (TestMethod tc : cases) {
             args.add(tc.toString());
         }
-        
+
         int exitCode = runInForkedVM(classPath, jvmArgs, "fi.helsinki.cs.tmc.testrunner.Main", args);
         if (exitCode != 0) {
             StringBuilder msg = new StringBuilder();
@@ -161,10 +161,10 @@ public class TmcTestMojo extends AbstractMojo {
             throw new MojoExecutionException(msg.toString());
         }
     }
-    
+
     private List<String> getUserJvmOpts() {
         ArrayList<String> result = new ArrayList<String>();
-        
+
         String opts = this.jvmOpts;
         if (opts.equals("USE_MAVEN_OPTS")) {
             opts = System.getenv("MAVEN_OPTS");
@@ -172,11 +172,11 @@ public class TmcTestMojo extends AbstractMojo {
                 opts = "";
             }
         }
-        
+
         result.addAll(Arrays.asList(StringUtils.split(opts)));
         return result;
     }
-    
+
     private String getTestRunnerClassPath() throws MojoExecutionException {
         Artifact runnerArt = repoSystem.createArtifact(
                 "fi.helsinki.cs.tmc",
@@ -200,14 +200,14 @@ public class TmcTestMojo extends AbstractMojo {
             }
             throw new MojoExecutionException(msg, cause);
         }
-        
+
         List<String> parts = new ArrayList<String>(result.getArtifacts().size());
         for (Artifact art : result.getArtifacts()) {
             parts.add(art.getFile().getPath());
         }
         return StringUtils.join(parts, File.pathSeparatorChar);
     }
-    
+
     private String getTestRunnerVersion() {
         if (tmcJunitRunnerVersion != null) {
             return tmcJunitRunnerVersion;
@@ -215,10 +215,10 @@ public class TmcTestMojo extends AbstractMojo {
             return bundle.getString("tmcjunitrunner.version");
         }
     }
-    
+
     private int runInForkedVM(String classPath, List<String> jvmArgs, String target, List<String> args) {
         Commandline cli = new Commandline();
-        
+
         cli.setExecutable(getJavaCommand());
         cli.setWorkingDirectory(new File(".").getAbsolutePath());
         try {
@@ -227,7 +227,7 @@ public class TmcTestMojo extends AbstractMojo {
             this.getLog().warn("Failed to use system envvars");
         }
         cli.addEnvironment("CLASSPATH", classPath);
-        
+
         String[] argArray = new String[jvmArgs.size() + 1 + args.size()];
         int i = 0;
         for (String arg : jvmArgs) {
@@ -240,7 +240,7 @@ public class TmcTestMojo extends AbstractMojo {
         cli.addArguments(argArray);
         getLog().debug("TmcTestMojo executing " + cli.toString());
         getLog().debug("Classpath: " + classPath);
-        
+
         OutputWriter stdout = new OutputWriter(stdoutFile);
         OutputWriter stderr = new OutputWriter(stderrFile);
         try {
@@ -253,15 +253,15 @@ public class TmcTestMojo extends AbstractMojo {
             stderr.close();
         }
     }
-    
+
     private String getJavaCommand() {
         return System.getProperty("java.home") + File.separator + "bin" + File.separator + "java";
     }
-    
+
     private class OutputWriter implements StreamConsumer {
         private Writer writer;
         private boolean errorLogged = false;
-        
+
         public OutputWriter(Writer writer) {
             this.writer = writer;
         }
@@ -274,7 +274,7 @@ public class TmcTestMojo extends AbstractMojo {
                 this.writer = new SinkWriter();
             }
         }
-        
+
         public synchronized void consumeLine(String string) {
             try {
                 writer.append(string).append('\n');
@@ -283,7 +283,7 @@ public class TmcTestMojo extends AbstractMojo {
                 logError(e);
             }
         }
-        
+
         public void close() {
             try {
                 writer.close();
@@ -292,7 +292,7 @@ public class TmcTestMojo extends AbstractMojo {
                 logError(e);
             }
         }
-        
+
         private void logError(IOException e) {
             if (!errorLogged) {
                 getLog().error("Failed to write output: " + e.getMessage());
@@ -300,8 +300,8 @@ public class TmcTestMojo extends AbstractMojo {
             }
         }
     }
-    
-    
+
+
     private static class SinkWriter extends Writer {
         @Override
         public void write(char[] cbuf, int off, int len) throws IOException {
