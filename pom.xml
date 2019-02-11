@@ -5,7 +5,7 @@
     <groupId>fi.helsinki.cs.tmc</groupId>
     <artifactId>tmc-maven-plugin</artifactId>
     <packaging>maven-plugin</packaging>
-    <version>1.8-SNAPSHOT</version>
+    <version>1.9-SNAPSHOT</version>
 
     <name>TMC Maven Plugin</name>
     <url>http://maven.testmycode.net/</url>
@@ -88,7 +88,7 @@
                 </executions>
             </plugin>
             <!-- Generate javadoc JAR -->
-            <!-- <plugin>
+            <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-javadoc-plugin</artifactId>
                 <executions>
@@ -99,7 +99,7 @@
                         </goals>
                     </execution>
                 </executions>
-            </plugin> -->
+            </plugin>
             <!-- Releases using mvn release:prepare and mvn release:perform. -->
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
