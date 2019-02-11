@@ -5,7 +5,7 @@
     <groupId>fi.helsinki.cs.tmc</groupId>
     <artifactId>tmc-maven-plugin</artifactId>
     <packaging>maven-plugin</packaging>
-    <version>1.12-SNAPSHOT</version>
+    <version>1.12</version>
 
     <name>TMC Maven Plugin</name>
     <url>http://maven.testmycode.net/</url>
@@ -19,7 +19,7 @@
         <connection>scm:git:https://github.com/testmycode/tmc-maven-plugin.git</connection>
         <developerConnection>scm:git:git@github.com:testmycode/tmc-maven-plugin.git</developerConnection>
         <url>https://github.com/testmycode/tmc-maven-plugin</url>
-      <tag>tmc-maven-plugin-1.9</tag>
+      <tag>tmc-maven-plugin-1.12</tag>
   </scm>
 
     <developers>
