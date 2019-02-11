@@ -1,27 +1,27 @@
 
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
     <modelVersion>4.0.0</modelVersion>
-    
+
     <groupId>fi.helsinki.cs.tmc</groupId>
     <artifactId>tmc-maven-plugin</artifactId>
     <packaging>maven-plugin</packaging>
     <version>1.7-SNAPSHOT</version>
-    
+
     <name>TMC Maven Plugin</name>
     <url>http://maven.testmycode.net/</url>
-    
+
     <organization>
         <name>University of Helsinki, Department of Computer Science</name>
         <url>http://cs.helsinki.fi/</url>
     </organization>
-    
+
     <scm>
         <connection>scm:git:https://github.com/testmycode/tmc-maven-plugin.git</connection>
         <developerConnection>scm:git:git@github.com:testmycode/tmc-maven-plugin.git</developerConnection>
         <url>https://github.com/testmycode/tmc-maven-plugin</url>
       <tag>HEAD</tag>
   </scm>
-    
+
     <developers>
         <developer>
             <id>mpartel</id>
@@ -29,10 +29,10 @@
             <email>martin.partel@gmail.com</email>
         </developer>
     </developers>
-    
+
     <properties>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-        <tmcjunitrunner.version>0.2.4</tmcjunitrunner.version>
+        <tmcjunitrunner.version>0.2.8</tmcjunitrunner.version>
     </properties>
 
     <dependencies>
@@ -62,7 +62,7 @@
             <version>${tmcjunitrunner.version}</version>
         </dependency>
     </dependencies>
-    
+
     <build>
         <plugins>
             <!-- Compiler options -->
@@ -125,7 +125,7 @@
             </plugin>
         </plugins>
     </build>
-    
+
     <!-- Deploy to maven.testmycode.net/nexus -->
     <distributionManagement>
         <repository>
@@ -139,7 +139,7 @@
             <url>http://maven.testmycode.net/nexus/content/repositories/snapshots</url>
         </snapshotRepository>
     </distributionManagement>
-    
+
     <!-- Use maven.testmycode.net/nexus as a repo -->
     <repositories>
         <repository>
